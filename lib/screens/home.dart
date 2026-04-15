@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:weather_app/services/location.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -11,6 +12,13 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   GeolocatorPlatform geoLocatorPlatform = GeolocatorPlatform.instance;
   LocationPermission? permission;
+
+  @override
+  void initState() {
+    super.initState();
+    getPermission();
+  }
+
   void getPermission() async {
     permission = await geoLocatorPlatform.checkPermission();
 
@@ -36,16 +44,11 @@ class _HomeState extends State<Home> {
   }
 
   void getLocation() async {
-    final LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 100,
-    );
+    Location location = Location();
+    await location.getCurrentLocation();
 
-    Position position = await Geolocator.getCurrentPosition(
-      locationSettings: locationSettings,
-    );
-
-    print(position);
+    print(location.latitude);
+    print(location.longitude);
   }
 
   @override
