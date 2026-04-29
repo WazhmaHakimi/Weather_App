@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:weather_app/services/location.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -17,6 +19,24 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     getPermission();
+  }
+
+  void getData() async {
+    http.Response response = await http.get(Uri.parse("https://api.openweathermap.org/data/2.5/weather?lat=34.53&lon=69.12&appid=7c0f760c846e6cbcdc56299315d94739&units=metric"
+        ""));
+
+    if(response.statusCode == 200) {
+      String data = response.body;
+      print(data);
+      var main = jsonDecode(data)['weather'][0]['main'];
+      var cityName = jsonDecode(data)['name'];
+      var feelsLike = jsonDecode(data)['main']['feels_like'];
+      print('Weather Condition: $main');
+      print('City Name: $cityName');
+      print('Feels Like: $feelsLike');
+    }else {
+      print(response.statusCode);
+    }
   }
 
   void getPermission() async {
@@ -53,23 +73,10 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
+    getData();
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: Colors.blue,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
-              ),
-            ),
-            onPressed: () {
-              getPermission();
-            },
-            child: const Text('Get Location', style: TextStyle(fontSize: 16)),
-          ),
-        ),
+        child: Center(),
       ),
     );
   }
