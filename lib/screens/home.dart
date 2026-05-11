@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:weather_app/components/loading_widget.dart';
 import 'package:weather_app/services/location.dart';
 import 'package:weather_app/services/networking.dart';
 
@@ -13,6 +14,8 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  bool? isDataLoaded = false;
+
   double? latitude, longitude;
 
   GeolocatorPlatform geoLocatorPlatform = GeolocatorPlatform.instance;
@@ -60,11 +63,19 @@ class _HomeState extends State<Home> {
     );
 
     var weatherData = await networkHelper.getData();
+
+    setState(() {
+      isDataLoaded = true;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: SafeArea(child: Center()));
+    if (!isDataLoaded!) {
+      return LoadingWidget();
+    } else {
+      return Scaffold(body: SafeArea(child: Center()));
+    }
   }
 }
 
