@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:weather_app/components/loading_widget.dart';
 import 'package:weather_app/models/weather_model.dart';
@@ -6,6 +7,7 @@ import 'package:weather_app/services/location.dart';
 import 'package:weather_app/services/networking.dart';
 
 import 'package:weather_app/utilities/constants.dart';
+import 'package:weather_app/utilities/weather_images.dart';
 
 import '../components/details_widget.dart';
 
@@ -25,6 +27,8 @@ class _HomeState extends State<Home> {
   LocationPermission? permission;
 
   WeatherModel? weatherModel;
+
+  int code = 0;
 
   @override
   void initState() {
@@ -69,6 +73,8 @@ class _HomeState extends State<Home> {
 
     var weatherData = await networkHelper.getData();
 
+    code = weatherData['weather'][0]['id'];
+
     weatherModel = WeatherModel(
       description: weatherData['weather'][0]['description'],
       location: weatherData['name'] + ', ' + weatherData['sys']['country'],
@@ -76,7 +82,8 @@ class _HomeState extends State<Home> {
       feelsLike: weatherData['main']['feels_like'],
       humidity: weatherData['main']['humidity'],
       wind: weatherData['wind']['speed'],
-      icon: weatherData['weather'][0]['icon'],
+      icon:
+          'images/weather_icons/${getIconPrefix(code)}${kWeatherIcons[code.toString()]!['icon']}.svg',
     );
 
     setState(() {
@@ -144,7 +151,11 @@ class _HomeState extends State<Home> {
                     Text(weatherModel!.location!, style: kLocationTextStyle),
                     SizedBox(height: 25),
 
-                    Icon(Icons.wb_sunny_outlined, size: 180),
+                    SvgPicture.asset(
+                      weatherModel!.icon!,
+                      height: 180,
+                      color: kLightColor
+                    ),
 
                     SizedBox(height: 40),
                     Text(
@@ -176,7 +187,7 @@ class _HomeState extends State<Home> {
                             value: '${weatherModel!.feelsLike!.round()}°',
                           ),
                           Padding(
-                            padding: const EdgeInsets.all(15.0),
+                            padding: const EdgeInsets.symmetric(vertical: 15.0),
                             child: VerticalDivider(thickness: 1),
                           ),
                           DetailsWidget(
@@ -184,7 +195,7 @@ class _HomeState extends State<Home> {
                             value: '${weatherModel!.humidity!}%',
                           ),
                           Padding(
-                            padding: const EdgeInsets.all(15.0),
+                            padding: const EdgeInsets.symmetric(vertical: 15.0),
                             child: VerticalDivider(thickness: 1),
                           ),
                           DetailsWidget(
