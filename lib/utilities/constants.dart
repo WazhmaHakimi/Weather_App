@@ -9,7 +9,7 @@ const kMidLightColor = Colors.white60;
 
 const kDarkColor = Colors.white24;
 
-const kLocationTextStyle = TextStyle(fontSize: 20, color: kMidLightColor);
+var kLocationTextStyle = GoogleFonts.monda(fontSize: 20, color: kMidLightColor);
 
 var kTempTextStyle = GoogleFonts.daysOne(fontSize: 80);
 

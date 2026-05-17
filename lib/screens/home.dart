@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:weather_app/components/loading_widget.dart';
+import 'package:weather_app/models/weather_model.dart';
 import 'package:weather_app/services/location.dart';
 import 'package:weather_app/services/networking.dart';
 
@@ -22,6 +23,8 @@ class _HomeState extends State<Home> {
 
   GeolocatorPlatform geoLocatorPlatform = GeolocatorPlatform.instance;
   LocationPermission? permission;
+
+  WeatherModel? weatherModel;
 
   @override
   void initState() {
@@ -66,6 +69,16 @@ class _HomeState extends State<Home> {
 
     var weatherData = await networkHelper.getData();
 
+    weatherModel = WeatherModel(
+      description: weatherData['weather'][0]['description'],
+      location: weatherData['name'] + ', ' + weatherData['sys']['country'],
+      temperature: weatherData['main']['temp'],
+      feelsLike: weatherData['main']['feels_like'],
+      humidity: weatherData['main']['humidity'],
+      wind: weatherData['wind']['speed'],
+      icon: weatherData['weather'][0]['icon'],
+    );
+
     setState(() {
       isDataLoaded = true;
     });
@@ -77,7 +90,8 @@ class _HomeState extends State<Home> {
       return LoadingWidget();
     } else {
       return Scaffold(
-        backgroundColor: kOverlayColor,
+        // backgroundColor: kOverlayColor,
+        backgroundColor: Colors.black87,
         body: SafeArea(
           child: Expanded(
             child: Column(
@@ -127,14 +141,20 @@ class _HomeState extends State<Home> {
                   children: [
                     Icon(Icons.location_city),
                     SizedBox(width: 12),
-                    Text('City Name', style: kLocationTextStyle),
+                    Text(weatherModel!.location!, style: kLocationTextStyle),
                     SizedBox(height: 25),
 
                     Icon(Icons.wb_sunny_outlined, size: 180),
 
                     SizedBox(height: 40),
-                    Text('00°', style: kTempTextStyle),
-                    Text('Clear', style: kLocationTextStyle),
+                    Text(
+                      '${weatherModel!.temperature!.round()}°',
+                      style: kTempTextStyle,
+                    ),
+                    Text(
+                      weatherModel!.description!.toUpperCase(),
+                      style: kLocationTextStyle,
+                    ),
                   ],
                 ),
 
@@ -151,17 +171,26 @@ class _HomeState extends State<Home> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          DetailsWidget(title: 'Feels Like', value: '31°'),
+                          DetailsWidget(
+                            title: 'Feels Like',
+                            value: '${weatherModel!.feelsLike!.round()}°',
+                          ),
                           Padding(
                             padding: const EdgeInsets.all(15.0),
                             child: VerticalDivider(thickness: 1),
                           ),
-                          DetailsWidget(title: 'Humidity', value: '15%'),
+                          DetailsWidget(
+                            title: 'Humidity',
+                            value: '${weatherModel!.humidity!}%',
+                          ),
                           Padding(
                             padding: const EdgeInsets.all(15.0),
                             child: VerticalDivider(thickness: 1),
                           ),
-                          DetailsWidget(title: 'Wind', value: '7'),
+                          DetailsWidget(
+                            title: 'Wind',
+                            value: '${weatherModel!.wind!.round()}',
+                          ),
                         ],
                       ),
                     ),
@@ -175,7 +204,3 @@ class _HomeState extends State<Home> {
     }
   }
 }
-
-// var id = decodedData['weather'][0]['id'];
-// var temprature = decodedData['main']['temp'];
-// var cityName = decodedData['name'];
