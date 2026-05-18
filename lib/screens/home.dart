@@ -5,11 +5,13 @@ import 'package:weather_app/components/loading_widget.dart';
 import 'package:weather_app/models/weather_model.dart';
 import 'package:weather_app/services/location.dart';
 import 'package:weather_app/services/networking.dart';
+import 'package:weather_app/services/weather.dart';
 
 import 'package:weather_app/utilities/constants.dart';
 import 'package:weather_app/utilities/weather_images.dart';
 
 import '../components/details_widget.dart';
+import '../components/error_message.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -21,6 +23,8 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   bool? isDataLoaded = false;
 
+  bool isErrorOccurred = false;
+
   double? latitude, longitude;
 
   GeolocatorPlatform geoLocatorPlatform = GeolocatorPlatform.instance;
@@ -29,6 +33,12 @@ class _HomeState extends State<Home> {
   WeatherModel? weatherModel;
 
   int code = 0;
+
+  Weather weather = Weather();
+
+  var weatherData;
+
+  String? title, message;
 
   @override
   void initState() {
@@ -50,28 +60,31 @@ class _HomeState extends State<Home> {
           );
         } else {
           print('Permission granted');
-          getLocation();
+          updateUI();
         }
       } else {
         print('User denied the request.');
       }
     } else {
-      getLocation();
+      updateUI();
     }
   }
 
-  void getLocation() async {
-    Location location = Location();
-    await location.getCurrentLocation();
+  void updateUI() async {
+    if (!await geoLocatorPlatform.isLocationServiceEnabled()) {
+      setState(() {
+        isErrorOccurred = true;
 
-    latitude = location.latitude;
-    longitude = location.longitude;
+        isDataLoaded = true;
 
-    NetworkHelper networkHelper = NetworkHelper(
-      "https://api.openweathermap.org/data/2.5/weather?lat=$latitude&lon=$longitude&appid=$apiKey&units=metric",
-    );
+        title = 'Location is turned off';
 
-    var weatherData = await networkHelper.getData();
+        message =
+            'Please enable the location service, to see weather condition for your location';
+        return;
+      });
+    }
+    weatherData = await weather.getLocationWeather();
 
     code = weatherData['weather'][0]['id'];
 
@@ -130,7 +143,9 @@ class _HomeState extends State<Home> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            getPermission();
+                          },
                           child: Row(
                             children: [
                               Text('My Location', style: kTextFieldTextStyle),
@@ -143,31 +158,39 @@ class _HomeState extends State<Home> {
                     ),
                   ],
                 ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.location_city),
-                    SizedBox(width: 12),
-                    Text(weatherModel!.location!, style: kLocationTextStyle),
-                    SizedBox(height: 25),
 
-                    SvgPicture.asset(
-                      weatherModel!.icon!,
-                      height: 180,
-                      color: kLightColor
-                    ),
+                isErrorOccurred
+                    ? ErrorMessage(title: title!, message: message!)
+                    : Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.location_city),
+                            SizedBox(width: 12),
+                            Text(
+                              weatherModel!.location!,
+                              style: kLocationTextStyle,
+                            ),
+                            SizedBox(height: 25),
 
-                    SizedBox(height: 40),
-                    Text(
-                      '${weatherModel!.temperature!.round()}°',
-                      style: kTempTextStyle,
-                    ),
-                    Text(
-                      weatherModel!.description!.toUpperCase(),
-                      style: kLocationTextStyle,
-                    ),
-                  ],
-                ),
+                            SvgPicture.asset(
+                              weatherModel!.icon!,
+                              height: 180,
+                              color: kLightColor,
+                            ),
+
+                            SizedBox(height: 40),
+                            Text(
+                              '${weatherModel!.temperature!.round()}°',
+                              style: kTempTextStyle,
+                            ),
+                            Text(
+                              weatherModel!.description!.toUpperCase(),
+                              style: kLocationTextStyle,
+                            ),
+                          ],
+                        ),
+                      ),
 
                 Padding(
                   padding: const EdgeInsets.all(12.0),
@@ -184,7 +207,8 @@ class _HomeState extends State<Home> {
                         children: [
                           DetailsWidget(
                             title: 'Feels Like',
-                            value: '${weatherModel!.feelsLike!.round()}°',
+                            value:
+                                '${weatherModel != null ? weatherModel!.feelsLike!.round() : 0}°',
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 15.0),
@@ -192,7 +216,8 @@ class _HomeState extends State<Home> {
                           ),
                           DetailsWidget(
                             title: 'Humidity',
-                            value: '${weatherModel!.humidity!}%',
+                            value:
+                                '${weatherModel != null ? weatherModel!.humidity! : 0}%',
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 15.0),
@@ -200,7 +225,8 @@ class _HomeState extends State<Home> {
                           ),
                           DetailsWidget(
                             title: 'Wind',
-                            value: '${weatherModel!.wind!.round()}',
+                            value:
+                                '${weatherModel != null ? weatherModel!.wind!.round() : 0}',
                           ),
                         ],
                       ),
