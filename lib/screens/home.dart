@@ -58,33 +58,58 @@ class _HomeState extends State<Home> {
           print(
             'Permission permenantly denied, please provide permission to the app from the setting.',
           );
+
+          setState(() {
+            isDataLoaded = true;
+            isErrorOccurred = true;
+            title = 'Permission permenantly denied.';
+            message = 'Please provide permission to the app from the device settings.';
+          });
         } else {
           print('Permission granted');
           updateUI();
         }
       } else {
         print('User denied the request.');
+        updateUI(cityName: 'kabul');
       }
     } else {
       updateUI();
     }
   }
 
-  void updateUI() async {
-    if (!await geoLocatorPlatform.isLocationServiceEnabled()) {
+  void updateUI({String? cityName}) async {
+    weatherData = null;
+
+    if (cityName == null || cityName == '') {
+      if (!await geoLocatorPlatform.isLocationServiceEnabled()) {
+        setState(() {
+          isDataLoaded = true;
+
+          isErrorOccurred = true;
+
+          title = 'Location is turned off';
+
+          message =
+          'Please enable the location service, to see weather condition for your location';
+          return;
+        });
+        weatherData = await weather.getLocationWeather();
+      }
+    }else {
+      weatherData = await weather.getCityWeather(cityName);
+    }
+
+    if (weatherData == null) {
       setState(() {
+        title = 'City not found';
+        message = 'Please make sure that you have entered the correct name';
+        isDataLoaded = true;
         isErrorOccurred = true;
 
-        isDataLoaded = true;
-
-        title = 'Location is turned off';
-
-        message =
-            'Please enable the location service, to see weather condition for your location';
         return;
       });
     }
-    weatherData = await weather.getLocationWeather();
 
     code = weatherData['weather'][0]['id'];
 
@@ -101,6 +126,7 @@ class _HomeState extends State<Home> {
 
     setState(() {
       isDataLoaded = true;
+      isErrorOccurred = false;
     });
   }
 
@@ -110,131 +136,135 @@ class _HomeState extends State<Home> {
       return LoadingWidget();
     } else {
       return Scaffold(
-        // backgroundColor: kOverlayColor,
-        backgroundColor: Colors.black87,
+        resizeToAvoidBottomInset: false,
+        backgroundColor: kOverlayColor,
         body: SafeArea(
-          child: Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 5,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: TextField(
-                          decoration: kTextFieldDecoration,
-                          onSubmitted: (String TypedName) {
-                            print(TypedName);
-                          },
-                        ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: TextField(
+                        decoration: kTextFieldDecoration,
+                        onSubmitted: (String TypedName) {
+                          setState(() {
+                            isDataLoaded = false;
+                            updateUI(cityName: TypedName);
+                          });
+                        },
                       ),
                     ),
-                    Expanded(
-                      flex: 5,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 12.0),
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white12,
-                            elevation: 1,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                  ),
+                  Expanded(
+                    flex: 5,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 12.0),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white12,
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          onPressed: () {
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isDataLoaded = false;
                             getPermission();
-                          },
-                          child: Row(
-                            children: [
-                              Text('My Location', style: kTextFieldTextStyle),
-                              SizedBox(width: 8),
-                              Icon(Icons.gps_fixed, color: Colors.white60),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                isErrorOccurred
-                    ? ErrorMessage(title: title!, message: message!)
-                    : Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          });
+                        },
+                        child: Row(
                           children: [
-                            Icon(Icons.location_city),
-                            SizedBox(width: 12),
-                            Text(
-                              weatherModel!.location!,
-                              style: kLocationTextStyle,
-                            ),
-                            SizedBox(height: 25),
-
-                            SvgPicture.asset(
-                              weatherModel!.icon!,
-                              height: 180,
-                              color: kLightColor,
-                            ),
-
-                            SizedBox(height: 40),
-                            Text(
-                              '${weatherModel!.temperature!.round()}°',
-                              style: kTempTextStyle,
-                            ),
-                            Text(
-                              weatherModel!.description!.toUpperCase(),
-                              style: kLocationTextStyle,
-                            ),
+                            Text('My Location', style: kTextFieldTextStyle),
+                            SizedBox(width: 8),
+                            Icon(Icons.gps_fixed, color: Colors.white60),
                           ],
                         ),
                       ),
-
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
                     ),
-                    color: kOverlayColor,
-                    child: Container(
-                      height: 100,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                  ),
+                ],
+              ),
+
+              isErrorOccurred
+                  ? ErrorMessage(title: title!, message: message!)
+                  : Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          DetailsWidget(
-                            title: 'Feels Like',
-                            value:
-                                '${weatherModel != null ? weatherModel!.feelsLike!.round() : 0}°',
+                          Icon(Icons.location_city),
+                          SizedBox(width: 12),
+                          Text(
+                            weatherModel!.location!,
+                            style: kLocationTextStyle,
                           ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
-                            child: VerticalDivider(thickness: 1),
+                          SizedBox(height: 25),
+
+                          SvgPicture.asset(
+                            weatherModel!.icon!,
+                            height: 180,
+                            color: kLightColor,
                           ),
-                          DetailsWidget(
-                            title: 'Humidity',
-                            value:
-                                '${weatherModel != null ? weatherModel!.humidity! : 0}%',
+
+                          SizedBox(height: 40),
+                          Text(
+                            '${weatherModel!.temperature!.round()}°',
+                            style: kTempTextStyle,
                           ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
-                            child: VerticalDivider(thickness: 1),
-                          ),
-                          DetailsWidget(
-                            title: 'Wind',
-                            value:
-                                '${weatherModel != null ? weatherModel!.wind!.round() : 0}',
+                          Text(
+                            weatherModel!.description!.toUpperCase(),
+                            style: kLocationTextStyle,
                           ),
                         ],
                       ),
                     ),
+
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  color: kOverlayColor,
+                  child: Container(
+                    height: 100,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        DetailsWidget(
+                          title: 'Feels Like',
+                          value:
+                              '${weatherModel != null ? weatherModel!.feelsLike!.round() : 0}°',
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 15.0),
+                          child: VerticalDivider(thickness: 1),
+                        ),
+                        DetailsWidget(
+                          title: 'Humidity',
+                          value:
+                              '${weatherModel != null ? weatherModel!.humidity! : 0}%',
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 15.0),
+                          child: VerticalDivider(thickness: 1),
+                        ),
+                        DetailsWidget(
+                          title: 'Wind',
+                          value:
+                              '${weatherModel != null ? weatherModel!.wind!.round() : 0}',
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       );
